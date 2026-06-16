@@ -1,0 +1,15 @@
+# Flutter specific
+**/.dart_tool/
+**/.packages
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/pubspec.lock
+
+# Node specific (React Native)
+**/node_modules/
+**/dist/
+
+# IDE files
+**/.idea/
+**/.vscode/
+**/*.iml
