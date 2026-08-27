@@ -1,40 +1,63 @@
-// ─── SupportHub React Native SDK ─────────────────────────────────────
-// Main entry point — re-exports all public API surface.
+export { HelpLoop } from './HelpLoop';
+export type { HelpLoopConfig, UserIdentity } from './HelpLoop';
 
-// Core
-export { SupportHub } from './SupportHub';
+import React, { useState, useEffect } from 'react';
+import { WebView } from 'react-native-webview';
+import { HelpLoop } from './HelpLoop';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Screens
-export { MessagingScreen } from './screens/MessagingScreen';
-export { ConversationListScreen } from './screens/ConversationListScreen';
+export function useHelpLoopUnreadCount(): number {
+  const [count, setCount] = useState(0);
 
-// Components
-export { UnreadBadge } from './components/UnreadBadge';
-export { MessageBubble } from './components/MessageBubble';
-export { DateSeparator } from './components/DateSeparator';
-export { ReplyInput } from './components/ReplyInput';
-export { AttachmentPreview } from './components/AttachmentPreview';
-export { LoadingIndicator } from './components/LoadingIndicator';
+  useEffect(() => {
+    let mounted = true;
+    HelpLoop.getUnreadCount().then(c => {
+      if (mounted) setCount(c);
+    });
+    return () => { mounted = false; };
+  }, []);
 
-// Hooks
-export { useSupportHub } from './hooks/useSupportHub';
-export { useUnreadCount } from './hooks/useUnreadCount';
-export { useConversations } from './hooks/useConversations';
-export { useMessages } from './hooks/useMessages';
+  return count;
+}
 
-// Theme
-export { createTheme, defaultTheme } from './theme/theme';
+const STORAGE_KEY = '@helploop_guest_identity';
 
-// Types
-export type {
-  SupportHubConfig,
-  UserIdentity,
-  Conversation,
-  Message,
-  Attachment,
-  ProjectSettings,
-  SupportHubTheme,
-  PaginatedMessages,
-  UnreadCountResponse,
-} from './models/types';
-export { SupportHubError } from './models/types';
+export const HelpLoopWidget: React.FC = () => {
+  const [uri, setUri] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // If not already identified, try loading from storage
+    const init = async () => {
+      try {
+        if (!HelpLoop.hasIdentity()) {
+          const stored = await AsyncStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const data = JSON.parse(stored);
+            await HelpLoop.identify({ externalId: data.externalId || 'guest', email: data.email, name: data.name });
+          }
+        }
+      } catch (e) {}
+      setUri(HelpLoop.getWidgetUrl());
+    };
+    init();
+  }, []);
+
+  const handleMessage = async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.email) {
+        const guestData = { externalId: 'guest', email: data.email, name: data.name };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(guestData));
+        await HelpLoop.identify(guestData);
+      }
+    } catch (e) {}
+  };
+
+  if (!uri) return null;
+
+  return React.createElement(WebView, { 
+    source: { uri }, 
+    style: { flex: 1 },
+    onMessage: handleMessage
+  });
+};

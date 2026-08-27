@@ -1,5 +1,5 @@
-name: supporthub_sdk
-description: SupportHub - Add support messaging to any Flutter app in minutes
+name: helploop_sdk
+description: HelpLoop - Add support messaging to any Flutter app in minutes
 version: 1.0.0
 publish_to: none
 
@@ -10,12 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.0
-  shared_preferences: ^2.3.0
-  image_picker: ^1.1.0
-  cached_network_image: ^3.4.1
-  intl: ^0.19.0
-  uuid: ^4.5.1
+  http: '>=1.2.0 <2.0.0'
+  http_parser: '>=4.0.0 <5.0.0'
+  shared_preferences: ^2.5.5
+  url_launcher: ^6.3.2
+  uuid: '>=4.0.0 <5.0.0'
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-# SupportHub React Native SDK
+# HelpLoop React Native SDK
 
 Add a beautiful, fully-featured support messaging experience to any React Native app — in minutes.
 
@@ -27,10 +27,10 @@ Dark-first design with indigo primary, optimistic messaging, unread badges, and 
 
 ```bash
 # npm
-npm install supporthub-react-native
+npm install helploop-react-native
 
 # yarn
-yarn add supporthub-react-native
+yarn add helploop-react-native
 ```
 
 ### Peer Dependencies
@@ -57,16 +57,16 @@ Get up and running in 4 steps:
 ```tsx
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
-import { SupportHub, MessagingScreen, UnreadBadge, useUnreadCount } from 'supporthub-react-native';
+import { HelpLoop, MessagingScreen, UnreadBadge, useUnreadCount } from 'helploop-react-native';
 
 // Step 1: Initialize (once, e.g., in App.tsx)
-await SupportHub.initialize({
+await HelpLoop.initialize({
   projectId: 'your-project-id',
   apiKey: 'your-api-key',
 });
 
 // Step 2: Identify the user
-await SupportHub.identify({
+await HelpLoop.identify({
   externalId: 'user-123',
   name: 'Jane Doe',
   email: 'jane@example.com',
@@ -98,9 +98,9 @@ function SupportScreen() {
 Initialize the SDK once during app startup, before any other SDK calls:
 
 ```tsx
-import { SupportHub } from 'supporthub-react-native';
+import { HelpLoop } from 'helploop-react-native';
 
-await SupportHub.initialize({
+await HelpLoop.initialize({
   projectId: 'your-project-id',
   apiKey: 'your-api-key',
 
@@ -114,8 +114,8 @@ await SupportHub.initialize({
 
 | Property | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `projectId` | `string` | ✅ | — | Your SupportHub project ID |
-| `apiKey` | `string` | ✅ | — | Your SupportHub API key |
+| `projectId` | `string` | ✅ | — | Your HelpLoop project ID |
+| `apiKey` | `string` | ✅ | — | Your HelpLoop API key |
 | `apiUrl` | `string` | — | Auto-generated | Custom API base URL |
 | `pollIntervalMs` | `number` | — | `30000` | Polling interval in milliseconds |
 
@@ -126,7 +126,7 @@ await SupportHub.initialize({
 ### Identify a Known User
 
 ```tsx
-await SupportHub.identify({
+await HelpLoop.identify({
   externalId: 'user-123',          // Required — your unique user ID
   email: 'jane@example.com',       // Optional
   name: 'Jane Doe',                // Optional
@@ -144,20 +144,20 @@ await SupportHub.identify({
 
 ```tsx
 // Generates and persists a unique anonymous ID
-await SupportHub.identifyAnonymous();
+await HelpLoop.identifyAnonymous();
 ```
 
 ### Check Current User
 
 ```tsx
-const user = SupportHub.getCurrentUser();
+const user = HelpLoop.getCurrentUser();
 // Returns UserIdentity | null
 ```
 
 ### Logout
 
 ```tsx
-await SupportHub.logout();
+await HelpLoop.logout();
 // Stops polling, clears storage, resets all SDK state
 ```
 
@@ -168,7 +168,7 @@ await SupportHub.logout();
 ### With React Navigation
 
 ```tsx
-import { MessagingScreen, ConversationListScreen } from 'supporthub-react-native';
+import { MessagingScreen, ConversationListScreen } from 'helploop-react-native';
 
 // In your navigator:
 <Stack.Screen name="Support" component={MessagingScreen} />
@@ -182,7 +182,7 @@ navigation.navigate('Support', { conversationId: 'conv-123' });
 ### Standalone (No React Navigation)
 
 ```tsx
-import { MessagingScreen } from 'supporthub-react-native';
+import { MessagingScreen } from 'helploop-react-native';
 
 function SupportChat() {
   return (
@@ -197,7 +197,7 @@ function SupportChat() {
 ### Conversation List
 
 ```tsx
-import { ConversationListScreen } from 'supporthub-react-native';
+import { ConversationListScreen } from 'helploop-react-native';
 
 function Conversations() {
   return (
@@ -216,7 +216,7 @@ function Conversations() {
 ### Using the Component
 
 ```tsx
-import { UnreadBadge, useUnreadCount } from 'supporthub-react-native';
+import { UnreadBadge, useUnreadCount } from 'helploop-react-native';
 
 function SupportTab() {
   const { count } = useUnreadCount();
@@ -241,7 +241,7 @@ const { count, loading, refresh } = useUnreadCount();
 ### Subscribing to Changes (Non-React)
 
 ```tsx
-const unsubscribe = SupportHub.onUnreadCountChanged((count) => {
+const unsubscribe = HelpLoop.onUnreadCountChanged((count) => {
   console.log('Unread count:', count);
   updateBadge(count);
 });
@@ -258,32 +258,32 @@ Register a device token after identifying the user:
 
 ```tsx
 import messaging from '@react-native-firebase/messaging';
-import { SupportHub } from 'supporthub-react-native';
+import { HelpLoop } from 'helploop-react-native';
 
 // Get the FCM token
 const token = await messaging().getToken();
 
-// Register with SupportHub
-await SupportHub.registerDeviceToken(token, Platform.OS as 'ios' | 'android');
+// Register with HelpLoop
+await HelpLoop.registerDeviceToken(token, Platform.OS as 'ios' | 'android');
 ```
 
 ### Unregister on Logout
 
 ```tsx
-await SupportHub.unregisterDeviceToken(token);
-await SupportHub.logout();
+await HelpLoop.unregisterDeviceToken(token);
+await HelpLoop.logout();
 ```
 
 ---
 
 ## Hooks Reference
 
-### `useSupportHub()`
+### `useHelpLoop()`
 
 Access core SDK state.
 
 ```tsx
-const { isInitialized, currentUser, settings } = useSupportHub();
+const { isInitialized, currentUser, settings } = useHelpLoop();
 ```
 
 | Return | Type | Description |
@@ -382,7 +382,7 @@ Individual chat message bubble.
 | Prop | Type | Required | Description |
 |---|---|---|---|
 | `message` | `Message` | ✅ | The message to render |
-| `theme` | `SupportHubTheme` | ✅ | Theme object |
+| `theme` | `HelpLoopTheme` | ✅ | Theme object |
 | `showReadIndicators` | `boolean` | ✅ | Show ✓/✓✓ on user messages |
 | `isLastInGroup` | `boolean` | — | Adjusts border radius and spacing |
 | `onImagePress` | `(url: string) => void` | — | Image tap handler |
@@ -396,7 +396,7 @@ Individual chat message bubble.
 The SDK uses a dark-first theme system. Colors are derived from your project settings:
 
 ```tsx
-import { createTheme } from 'supporthub-react-native';
+import { createTheme } from 'helploop-react-native';
 
 // Default dark indigo theme
 const theme = createTheme();
@@ -439,18 +439,18 @@ All types are fully exported:
 
 ```tsx
 import type {
-  SupportHubConfig,
+  HelpLoopConfig,
   UserIdentity,
   Conversation,
   Message,
   Attachment,
   ProjectSettings,
-  SupportHubTheme,
+  HelpLoopTheme,
   PaginatedMessages,
   UnreadCountResponse,
-} from 'supporthub-react-native';
+} from 'helploop-react-native';
 
-import { SupportHubError } from 'supporthub-react-native';
+import { HelpLoopError } from 'helploop-react-native';
 ```
 
 ### Key Interfaces
@@ -484,12 +484,12 @@ interface Message {
 
 ## API Reference
 
-### Static Methods on `SupportHub`
+### Static Methods on `HelpLoop`
 
 | Method | Returns | Description |
 |---|---|---|
 | `initialize(config)` | `Promise<void>` | Initialize the SDK (call once) |
-| `getInstance()` | `SupportHub` | Get the singleton instance |
+| `getInstance()` | `HelpLoop` | Get the singleton instance |
 | `identify(identity)` | `Promise<void>` | Identify a known user |
 | `identifyAnonymous()` | `Promise<void>` | Identify as anonymous user |
 | `getCurrentUser()` | `UserIdentity \| null` | Get current user |
