@@ -206,7 +206,11 @@ class _HelpLoopWidgetState extends State<HelpLoopWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return WebViewWidget(controller: _controller);
+    return SafeArea(
+      bottom: true,
+      top: false, // Let the app's Scaffold handle the top safe area if it wants to
+      child: WebViewWidget(controller: _controller),
+    );
   }
 }
 

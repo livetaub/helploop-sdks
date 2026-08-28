@@ -3,6 +3,7 @@ export type { HelpLoopConfig, UserIdentity } from './HelpLoop';
 
 import React, { useState, useEffect } from 'react';
 import { WebView } from 'react-native-webview';
+import { SafeAreaView } from 'react-native';
 import { HelpLoop } from './HelpLoop';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -55,9 +56,11 @@ export const HelpLoopWidget: React.FC = () => {
 
   if (!uri) return null;
 
-  return React.createElement(WebView, { 
-    source: { uri }, 
-    style: { flex: 1 },
-    onMessage: handleMessage
-  });
+  return React.createElement(SafeAreaView, { style: { flex: 1, backgroundColor: 'transparent' } }, 
+    React.createElement(WebView, { 
+      source: { uri }, 
+      style: { flex: 1 },
+      onMessage: handleMessage
+    })
+  );
 };
