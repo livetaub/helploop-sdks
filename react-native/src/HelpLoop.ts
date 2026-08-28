@@ -16,7 +16,7 @@ export interface UserIdentity {
   name?: string;
 }
 
-const DEFAULT_WIDGET_URL = 'https://widget.helploop.com';
+const DEFAULT_WIDGET_URL = 'https://web-black-five-25.vercel.app';
 
 export class HelpLoop {
   private static instance: HelpLoop | null = null;

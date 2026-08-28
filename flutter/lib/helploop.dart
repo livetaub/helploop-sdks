@@ -43,7 +43,7 @@ class HelpLoop {
     required String apiKey,
     required String apiUrl,
     String? appVersion,
-    String widgetUrl = 'https://widget.helploop.com',
+    String widgetUrl = 'https://web-black-five-25.vercel.app',
   }) async {
     _instance = HelpLoop._(HelpLoopConfig(
       projectId: projectId,
