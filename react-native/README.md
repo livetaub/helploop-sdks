@@ -38,12 +38,13 @@ yarn add helploop-react-native
 The SDK requires the following peer dependencies:
 
 ```bash
-npm install @react-native-async-storage/async-storage react-native-image-picker
+npm install @react-native-async-storage/async-storage react-native-image-picker react-native-webview
 ```
 
 | Dependency | Purpose |
 |---|---|
 | `@react-native-async-storage/async-storage` | Persistent storage for user identity & session |
+| `react-native-webview` | In-app WebView that renders the hosted chat widget |
 | `react-native-image-picker` | Image attachment support (optional — degrades gracefully) |
 
 > **iOS:** Run `npx pod-install` after installing.
@@ -57,7 +58,7 @@ Get up and running in 4 steps:
 ```tsx
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
-import { HelpLoop, MessagingScreen, UnreadBadge, useUnreadCount } from 'helploop-react-native';
+import { HelpLoop, HelpLoopWidget, useHelpLoopUnreadCount } from 'helploop-react-native';
 
 // Step 1: Initialize (once, e.g., in App.tsx)
 await HelpLoop.initialize({
@@ -74,20 +75,18 @@ await HelpLoop.identify({
 
 // Step 3: Add a support button with unread badge
 function SupportButton({ onPress }: { onPress: () => void }) {
-  const { count } = useUnreadCount();
+  const count = useHelpLoopUnreadCount();
 
   return (
-    <UnreadBadge count={count}>
-      <TouchableOpacity onPress={onPress}>
-        <Text>💬 Support</Text>
-      </TouchableOpacity>
-    </UnreadBadge>
+    <TouchableOpacity onPress={onPress}>
+      <Text>💬 Support{count > 0 ? ` (${count})` : ''}</Text>
+    </TouchableOpacity>
   );
 }
 
-// Step 4: Show the messaging screen
+// Step 4: Show the chat — an embedded WebView, so UI changes ship without an app update
 function SupportScreen() {
-  return <MessagingScreen onBack={() => console.log('Back pressed')} />;
+  return <HelpLoopWidget />;
 }
 ```
 
@@ -163,48 +162,37 @@ await HelpLoop.logout();
 
 ---
 
-## Opening the Messaging Screen
+## Opening the Chat (Embedded WebView)
+
+The chat UI is the hosted web widget rendered inside your app via `react-native-webview`.
+This keeps the chat server-driven: redeploy the web widget and every user sees the
+latest version without updating the app.
 
 ### With React Navigation
 
 ```tsx
-import { MessagingScreen, ConversationListScreen } from 'helploop-react-native';
+import { HelpLoopWidget } from 'helploop-react-native';
 
 // In your navigator:
-<Stack.Screen name="Support" component={MessagingScreen} />
-<Stack.Screen name="Conversations" component={ConversationListScreen} />
+<Stack.Screen name="Support" component={HelpLoopWidget} />
 
 // Navigate to it:
 navigation.navigate('Support');
-navigation.navigate('Support', { conversationId: 'conv-123' });
 ```
 
 ### Standalone (No React Navigation)
 
 ```tsx
-import { MessagingScreen } from 'helploop-react-native';
+import { useState } from 'react';
+import { Modal } from 'react-native';
+import { HelpLoopWidget } from 'helploop-react-native';
 
 function SupportChat() {
+  const [visible, setVisible] = useState(false);
   return (
-    <MessagingScreen
-      onBack={() => setShowSupport(false)}
-      conversationId="conv-123"  // Optional: open a specific conversation
-    />
-  );
-}
-```
-
-### Conversation List
-
-```tsx
-import { ConversationListScreen } from 'helploop-react-native';
-
-function Conversations() {
-  return (
-    <ConversationListScreen
-      onSelectConversation={(id) => navigation.navigate('Support', { conversationId: id })}
-      onBack={() => navigation.goBack()}
-    />
+    <Modal visible={visible} onRequestClose={() => setVisible(false)}>
+      <HelpLoopWidget />
+    </Modal>
   );
 }
 ```
@@ -345,25 +333,20 @@ const { messages, loading, error, hasMore, loadMore, sendMessage, markAsRead, re
 
 ## Components
 
-### `<MessagingScreen />`
+### `<HelpLoopWidget />`
 
-The main chat screen.
+The main chat screen — the hosted web widget embedded in an in-app WebView
+(`react-native-webview`). Takes no props; it builds its URL from the current
+`HelpLoop` configuration and identity. When a guest enters their email in the
+widget, it is persisted on-device so they are not asked again.
 
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `navigation` | `any` | — | React Navigation navigation prop |
-| `conversationId` | `string` | — | Open a specific conversation |
-| `onBack` | `() => void` | — | Back button handler (standalone mode) |
+```tsx
+import { HelpLoopWidget } from 'helploop-react-native';
 
-### `<ConversationListScreen />`
-
-List of all conversations.
-
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `navigation` | `any` | — | React Navigation navigation prop |
-| `onSelectConversation` | `(id: string) => void` | ✅ | Called when a conversation is tapped |
-| `onBack` | `() => void` | — | Back button handler (standalone mode) |
+function SupportScreen() {
+  return <HelpLoopWidget />;
+}
+```
 
 ### `<UnreadBadge />`
 

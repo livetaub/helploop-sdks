@@ -1,5 +1,4 @@
 import React from 'react';
-import { Linking } from 'react-native';
 
 export interface HelpLoopConfig {
   projectId: string;
@@ -116,8 +115,8 @@ export class HelpLoop {
     return 0;
   }
 
-  static async open(): Promise<void> {
-    const url = HelpLoop.getWidgetUrl();
-    await Linking.openURL(url);
-  }
+  // Opening the chat: render the <HelpLoopWidget /> component (exported from
+  // index.ts), which embeds the hosted chat page in an in-app WebView
+  // (react-native-webview). This keeps the chat UI server-driven: redeploy
+  // the web widget and every user sees the latest version without an app update.
 }
