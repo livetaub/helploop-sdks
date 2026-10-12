@@ -282,6 +282,13 @@ class _HelpLoopWidgetState extends State<HelpLoopWidget> {
   }
 
   @override
+  void dispose() {
+    // Chat closed: refresh the unread badge so it reflects what was read.
+    HelpLoop.refreshUnreadCount();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: true,
