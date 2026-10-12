@@ -101,6 +101,7 @@ class HelpLoop {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('helploop_guest_identity');
+      await prefs.remove(_broadcastSeenKey(instance.config.projectId));
     } catch (_) {}
   }
 
@@ -134,28 +135,101 @@ class HelpLoop {
   }
 
   static Future<int> getUnreadCount() async {
+    var count = 0;
+
     final user = instance._currentUser;
-    if (user == null || user.externalId == 'guest') return 0;
-    
+    if (user != null && user.externalId != 'guest') {
+      try {
+        final config = instance.config;
+        final uri = Uri.parse('${config.apiUrl}/unread').replace(queryParameters: {
+          'external_user_id': user.externalId,
+        });
+        final response = await http.get(uri, headers: {
+          'X-Project-ID': config.projectId,
+          'X-API-Key': config.apiKey,
+        });
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          count = (data['unread_count'] as num?)?.toInt() ?? 0;
+        }
+      } catch (_) {}
+    }
+
+    // Broadcasts are render-only (no conversation rows), so they are tracked
+    // client-side: any broadcast newer than the last-seen timestamp counts
+    // as one unread item.
     try {
-      final config = instance.config;
-      final uri = Uri.parse('${config.apiUrl}/unread').replace(queryParameters: {
-        'external_user_id': user.externalId,
-      });
-      final response = await http.get(uri, headers: {
-        'X-Project-ID': config.projectId,
-        'X-API-Key': config.apiKey,
-      });
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return (data['unread_count'] as num?)?.toInt() ?? 0;
-      }
+      if (await _hasUnseenBroadcast()) count += 1;
     } catch (_) {}
-    return 0;
+    return count;
   }
 
-  static Stream<int> get unreadCountStream => Stream.fromFuture(getUnreadCount());
+  /// Key holding the last-seen broadcast timestamp for a project.
+  static String _broadcastSeenKey(String projectId) =>
+      'helploop_broadcast_seen_at_$projectId';
+
+  /// Fetches the newest broadcast timestamp for the project, if any.
+  static Future<DateTime?> _latestBroadcastTime() async {
+    final config = instance.config;
+    final uri = Uri.parse('${config.apiUrl}/broadcasts');
+    final response = await http.get(uri, headers: {
+      'X-Project-ID': config.projectId,
+      'X-API-Key': config.apiKey,
+    });
+    if (response.statusCode != 200) return null;
+    final data = jsonDecode(response.body);
+    final list = (data['broadcasts'] as List?) ?? [];
+    DateTime? latest;
+    for (final b in list) {
+      final sentAt = (b as Map)['sent_at'] as String?;
+      if (sentAt == null) continue;
+      final t = DateTime.tryParse(sentAt);
+      if (t != null && (latest == null || t.isAfter(latest))) latest = t;
+    }
+    return latest;
+  }
+
+  /// Whether a broadcast exists that the user has not seen yet.
+  static Future<bool> _hasUnseenBroadcast() async {
+    final latest = await _latestBroadcastTime();
+    if (latest == null) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final seenStr =
+        prefs.getString(_broadcastSeenKey(instance.config.projectId));
+    final seen = seenStr != null ? DateTime.tryParse(seenStr) : null;
+    return seen == null || latest.isAfter(seen);
+  }
+
+  /// Marks all broadcasts as seen (call when the chat is opened).
+  static Future<void> markBroadcastsSeen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _broadcastSeenKey(instance.config.projectId),
+        DateTime.now().toUtc().toIso8601String(),
+      );
+    } catch (_) {}
+  }
+
+  static final StreamController<int> _unreadController =
+      StreamController<int>.broadcast();
+
+  /// Live unread-count stream: emits the current count on listen, then
+  /// re-emits whenever [refreshUnreadCount] is called.
+  static Stream<int> get unreadCountStream async* {
+    yield await getUnreadCount();
+    yield* _unreadController.stream;
+  }
+
   static Stream<int> onUnreadCountChanged() => unreadCountStream;
+
+  /// Re-fetches the unread count and pushes it to [unreadCountStream].
+  /// Call when the chat is closed so badges clear promptly.
+  static Future<void> refreshUnreadCount() async {
+    try {
+      _unreadController.add(await getUnreadCount());
+    } catch (_) {}
+  }
 
   static Future<void> registerDeviceToken({required String token, required String platform}) async {}
   static Future<void> unregisterDeviceToken(String token) async {}
@@ -182,6 +256,9 @@ class _HelpLoopWidgetState extends State<HelpLoopWidget> {
   @override
   void initState() {
     super.initState();
+    // Opening the chat clears the broadcast-unseen flag and refreshes badges.
+    HelpLoop.markBroadcastsSeen();
+    HelpLoop.refreshUnreadCount();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel(

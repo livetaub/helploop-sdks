@@ -15,7 +15,11 @@ export function useHelpLoopUnreadCount(): number {
     HelpLoop.getUnreadCount().then(c => {
       if (mounted) setCount(c);
     });
-    return () => { mounted = false; };
+    // Stay live: re-render whenever refreshUnreadCount() is called.
+    const unsubscribe = HelpLoop.subscribeUnread(c => {
+      if (mounted) setCount(c);
+    });
+    return () => { mounted = false; unsubscribe(); };
   }, []);
 
   return count;
@@ -27,6 +31,9 @@ export const HelpLoopWidget: React.FC = () => {
   const [uri, setUri] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // Opening the chat clears the broadcast-unseen flag and refreshes badges.
+    HelpLoop.markBroadcastsSeen();
+    HelpLoop.refreshUnreadCount();
     // If not already identified, try loading from storage
     const init = async () => {
       try {

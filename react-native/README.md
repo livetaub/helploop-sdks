@@ -201,35 +201,38 @@ function SupportChat() {
 
 ## Unread Badge
 
-### Using the Component
+The unread count covers support replies plus one for any unseen broadcast
+announcement. The hook stays live: it re-renders whenever
+`HelpLoop.refreshUnreadCount()` is called (the chat widget calls it
+automatically when opened).
+
+### Using the Hook
 
 ```tsx
-import { UnreadBadge, useUnreadCount } from 'helploop-react-native';
+import { useHelpLoopUnreadCount } from 'helploop-react-native';
 
 function SupportTab() {
-  const { count } = useUnreadCount();
+  const count = useHelpLoopUnreadCount();
 
-  return (
-    <UnreadBadge count={count} color="#EF4444">
-      <TabIcon name="chat" />
-    </UnreadBadge>
-  );
+  return <TabIcon name="chat" badge={count > 0 ? count : undefined} />;
 }
 ```
 
-### Using the Hook Directly
+### Manual Refresh
+
+Call `refreshUnreadCount()` when the chat screen closes so the badge
+clears promptly:
 
 ```tsx
-const { count, loading, refresh } = useUnreadCount();
-
-// Display inline
-<Text>You have {count} unread messages</Text>
+useEffect(() => {
+  return () => { HelpLoop.refreshUnreadCount(); };
+}, []);
 ```
 
 ### Subscribing to Changes (Non-React)
 
 ```tsx
-const unsubscribe = HelpLoop.onUnreadCountChanged((count) => {
+const unsubscribe = HelpLoop.subscribeUnread((count) => {
   console.log('Unread count:', count);
   updateBadge(count);
 });
