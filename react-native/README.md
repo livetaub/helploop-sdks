@@ -199,6 +199,15 @@ function SupportChat() {
 
 ---
 
+## Support button pattern
+
+The host app chooses where and how to place the support trigger — a nav item, a floating button, a menu entry, or any other control. The trigger's only job is to open the chat: render `<HelpLoopWidget />` (or navigate to the screen that renders it). From there, the SDK owns the dialog: it renders the chat itself — the hosted web widget, which opens as a floating popup at the bottom-right on desktop/web and full-screen on mobile. Do not embed the chat as a page, tab, or panel inside the host layout.
+
+- Place the trigger wherever fits your app; the SDK does not dictate its position or style.
+- Opening the chat is always an SDK call (render `<HelpLoopWidget />`); the host never renders the conversation UI itself.
+- Identify the user before or upon open (`HelpLoop.identify()` with `externalId` and `identifierType`) so conversations are attributed to the right user.
+- Show unread state with the SDK's unread count (`useUnreadCount()` / `<UnreadBadge />`), not with host-side tracking.
+
 ## Unread Badge
 
 The unread count covers support replies plus one for any unseen broadcast
@@ -498,3 +507,4 @@ interface Message {
 ## License
 
 MIT
+
